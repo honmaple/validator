@@ -6,7 +6,7 @@
 # Author: jianglin
 # Email: xiyang0807@gmail.com
 # Created: 2016-12-20 21:29:52 (CST)
-# Last Update:星期二 2016-12-20 21:43:3 (CST)
+# Last Update:星期五 2016-12-23 17:16:7 (CST)
 #          By:
 # Description:
 # **************************************************************************
@@ -18,6 +18,7 @@ class ValidatorRegex(Validator):
     regex = ''
 
     def __call__(self, value):
+        self.value = value
         regex = self.kwargs.get('regex')
         if regex is not None:
             self.regex = regex
@@ -29,14 +30,15 @@ class ValidatorRegex(Validator):
 
 class ValidatorEmail(ValidatorRegex):
     regex = r'^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$'
-    error = 'email format error'
+    callback = 'email format error'
 
 
 class ValidatorUrl(ValidatorRegex):
     regex = r'^[a-z]+://(?P<host>[^/:]+)(?P<port>:[0-9]+)?(?P<path>\/.*)?$'
-    error = 'url format error'
+    callback = 'url format error'
 
 
 class ValidatorPhone(ValidatorRegex):
     regex = r'^(13[0-9]|14[5|7]|15[0|1|2|3|5|6|7|8|9]|18[0|1|2|3|5|6|7|8|9])\d{8}$'
-    error = 'phone format error'
+    callback = 'phone format error'
+

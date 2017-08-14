@@ -6,7 +6,7 @@
 # Author: jianglin
 # Email: xiyang0807@gmail.com
 # Created: 2016-12-20 21:30:29 (CST)
-# Last Update:星期二 2016-12-20 21:30:45 (CST)
+# Last Update:星期五 2016-12-23 17:16:21 (CST)
 #          By:
 # Description:
 # **************************************************************************
@@ -15,6 +15,7 @@ from .base import Validator
 
 class ValidatorInteger(Validator):
     def __call__(self, value):
+        self.value = value
         min = self.kwargs.get('min')
         max = self.kwargs.get('max')
         size = self.kwargs.get('size')
@@ -31,3 +32,5 @@ class ValidatorInteger(Validator):
         except ValueError:
             return False
         return True
+
+
