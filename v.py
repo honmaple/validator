@@ -6,12 +6,29 @@
 # Author: jianglin
 # Email: lin.jiang@upai.com
 # Created: 2017-08-14 18:05:29 (CST)
-# Last Update:星期一 2017-8-14 18:33:54 (CST)
+# Last Update:星期二 2017-8-15 10:43:55 (CST)
 #          By:
 # Description:
 # **************************************************************************
 class ValidationException(Exception):
     pass
+
+
+class And(object):
+    def __init__(self, validators):
+        self.validators = validators
+
+    def is_valid(self, args, strict=False):
+        return validation(self.validators, args, strict)
+
+
+class Or(And):
+    def is_valid(self, args, strict=False):
+        for validator in self.validators:
+            result = validation([validator], args, strict)
+            if result is True:
+                break
+        return result
 
 
 class Validator(object):
@@ -49,6 +66,7 @@ class Validator(object):
         self.callback = callback
         self.custom = custom
         self.default = default
+        self.validators = []
 
     def convert(self, value):
         return self.type(value)
@@ -66,7 +84,7 @@ class Validator(object):
         return self.default
 
     def callback_boolean(self):
-        return "{} is not boolean value".format(self.name)
+        return "{} is not valid boolean value".format(self.name)
 
     def validate_integer(self, value):
         if self.integer is not None:
@@ -120,6 +138,15 @@ class Validator(object):
     def callback_type(self):
         return '{} type is not {}'.format(self.name, self.type)
 
+    def add_validator(self, *args, **kwargs):
+        validator = Validator(*args, **kwargs)
+        self.validators.append(validator)
+
+    def is_valid(self, args, strict=False):
+        if not self.validators:
+            return validation([self], args, strict)
+        return validation(self.validators, args, strict)
+
     def __call__(self, value):
         value = self.convert(value)
         validates = ['required', 'type', 'equal', 'in', 'length', 'integer',
@@ -133,11 +160,26 @@ class Validator(object):
                 self.callback = getattr(self, callback)()
             assert getattr(self, key)(value) is True
 
+    def __str__(self):
+        return '{} validation'.format(self.name)
+
 
 def validation(validators, args, strict=False):
     if callable(args):
         args = args()
     for validator in validators:
+        if isinstance(validator, (list, tuple)):
+            validator = And(validator)
+        if isinstance(validator, And):
+            result = validator.is_valid(args, strict)
+            if result is True:
+                continue
+            return result
+        elif isinstance(validator, Or):
+            result = validator.is_valid(args, strict)
+            if result is True:
+                break
+            return result
         name = validator.name
         if validator.alias is not None:
             name = validator.alias
@@ -146,7 +188,7 @@ def validation(validators, args, strict=False):
             raise ValidationException('{} not exists'.format(name))
         try:
             validator(value)
-        except ValueError:
+        except (ValueError, TypeError):
             return '{} cannot be converted to {}'.format(
                 value, validator.type.__name__)
         except AssertionError:
@@ -156,14 +198,16 @@ def validation(validators, args, strict=False):
 
 if __name__ == '__main__':
     args = {
-        'username': '12344',
-        'password': '321',
+        'username': '12344s',
+        'password': '1',
     }
-    validator = Validator(
-        'username',
-        type=int,
-        length=lambda l: l <= 6,
-        boolean=False,
-        in_=[1, 2])
-    a = validation([validator], args)
-    print(a)
+    validator = Validator('login')
+    validator.add_validator(
+        'username', type=int, length=lambda l: l <= 7, boolean=None)
+    validator.add_validator(
+        'passwor', type=int, length=lambda l: l <= 7, boolean=True)
+    a = And(validator.validators)
+    b = validation([a], args)
+    # a = validator.is_valid(args)
+    # a = validation([validator], args, strict=True)
+    print(a, b)
